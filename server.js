@@ -1,26 +1,50 @@
 var express = require('express');
 var morgan = require('morgan');
+var mongoose = require('mongoose');
+var bodyParser = require('body-parser');
+var ejs = require('ejs');
+var ejs-mate = require('ejs-mate');
+
+var User = require('./models/user');
 
 var app = express();
 
+
 //Middleware
 app.use(morgan('dev'));
-
-app.get('/',function(req,res){
-    
-   var name = "Dipro"; 
-   res.json("My name is " +  name);
-
-});
-
-app.get('/catname',function(req,res){
-    
-   var name = "Batman"; 
-   res.json("Cat name is " +  name);
-
-});
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.listen(3000, function(err) {
   if (err) throw err;
   console.log("Server is Running on Port: 3000");
 });
+
+mongoose.connect('mongodb://admin:password@ds023465.mlab.com:23465/ecommerce',function(err){
+	if(err){
+		console.log(err);
+	}
+	else
+	{
+	   console.log('connected to the database');	
+	}
+});
+
+app.post('/create-user',function(req,res,next){
+	var user = new User();
+	user.profile.name = req.body.name;
+	user.password = req.body.password;
+	user.email = req.body.email;
+
+  user.save(function(err){
+  	if(err){
+  		return next(err);
+  	}
+  	else
+  	{
+  		res.json("Sucessfully created a new user");
+  	}
+  });
+
+});
+
