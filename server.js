@@ -3,24 +3,23 @@ var morgan = require('morgan');
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var ejs = require('ejs');
-var ejs-mate = require('ejs-mate');
+var engine = require('ejs-mate');
+var session = require('express-session');
+var cookieParser = require('cookie-parser');
+var flash = require('express-flash');
 
+
+var secret = require('./config/secret');
 var User = require('./models/user');
 
 var app = express();
 
+// use ejs-locals for all ejs templates:
+app.engine('ejs', engine);
 
-//Middleware
-app.use(morgan('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-app.listen(3000, function(err) {
-  if (err) throw err;
-  console.log("Server is Running on Port: 3000");
-});
 
-mongoose.connect('mongodb://admin:password@ds023465.mlab.com:23465/ecommerce',function(err){
+mongoose.connect(secret.database,function(err){
 	if(err){
 		console.log(err);
 	}
@@ -30,21 +29,37 @@ mongoose.connect('mongodb://admin:password@ds023465.mlab.com:23465/ecommerce',fu
 	}
 });
 
-app.post('/create-user',function(req,res,next){
-	var user = new User();
-	user.profile.name = req.body.name;
-	user.password = req.body.password;
-	user.email = req.body.email;
+//Middleware
+app.use(express.static(__dirname + '/public'));
+app.use(morgan('dev'));
+app.use(bodyParser.json()); /*this is for useing postman ext4esntion in chrome*/
+app.use(bodyParser.urlencoded({ extended: true })); /*this is for useing postman ext4esntion in chrome*/
 
-  user.save(function(err){
-  	if(err){
-  		return next(err);
-  	}
-  	else
-  	{
-  		res.json("Sucessfully created a new user");
-  	}
-  });
+app.use(cookieParser());
+app.use(session({
+  resave: true,
+  saveUninitialized: true,
+  secret: secret.secretKey
+}));
+app.use(flash());
 
+app.use('ejs',engine);
+app.set('view engine','ejs');
+
+
+var mainRoutes = require('./routes/main');
+var userRoutes = require('./routes/user');
+app.use(mainRoutes);
+app.use(userRoutes);
+
+
+
+
+
+
+
+app.listen(secret.port, function(err) {
+  if (err) throw err;
+  console.log("Server is Running on port:" + secret.port);
 });
 
